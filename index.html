@@ -3,105 +3,88 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tic-Tac-Toe</title>
+    <title>Snake Game</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
             text-align: center;
+            font-family: Arial, sans-serif;
         }
-        .board {
-            display: grid;
-            grid-template-columns: repeat(3, 100px);
-            grid-template-rows: repeat(3, 100px);
-            gap: 5px;
-            justify-content: center;
-            margin-top: 20px;
-        }
-        .cell {
-            width: 100px;
-            height: 100px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 2em;
+        canvas {
             border: 2px solid black;
-            cursor: pointer;
-        }
-        .cell.taken {
-            cursor: not-allowed;
-        }
-        .message {
-            margin-top: 20px;
-            font-size: 1.2em;
+            display: block;
+            margin: 20px auto;
         }
     </style>
 </head>
 <body>
-    <h1>Tic-Tac-Toe</h1>
-    <div class="board" id="board"></div>
-    <div class="message" id="message"></div>
-    <button onclick="resetGame()">Restart Game</button>
-    
+    <h1>Snake Game</h1>
+    <canvas id="gameCanvas" width="400" height="400"></canvas>
     <script>
-        const board = document.getElementById("board");
-        const message = document.getElementById("message");
-        let currentPlayer = "X";
-        let gameBoard = Array(9).fill(null);
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
 
-        function createBoard() {
-            board.innerHTML = "";
-            gameBoard.forEach((_, index) => {
-                const cell = document.createElement("div");
-                cell.classList.add("cell");
-                cell.dataset.index = index;
-                cell.addEventListener("click", makeMove);
-                board.appendChild(cell);
-            });
+        const box = 20;
+        let snake = [{ x: 200, y: 200 }];
+        let direction = "RIGHT";
+        let food = {
+            x: Math.floor(Math.random() * 20) * box,
+            y: Math.floor(Math.random() * 20) * box,
+        };
+
+        document.addEventListener("keydown", changeDirection);
+
+        function changeDirection(event) {
+            const key = event.keyCode;
+            if (key === 37 && direction !== "RIGHT") direction = "LEFT";
+            if (key === 38 && direction !== "DOWN") direction = "UP";
+            if (key === 39 && direction !== "LEFT") direction = "RIGHT";
+            if (key === 40 && direction !== "UP") direction = "DOWN";
         }
 
-        function makeMove(event) {
-            const index = event.target.dataset.index;
-            if (!gameBoard[index]) {
-                gameBoard[index] = currentPlayer;
-                event.target.textContent = currentPlayer;
-                event.target.classList.add("taken");
-                if (checkWinner()) {
-                    message.textContent = `${currentPlayer} wins!`;
-                    endGame();
-                    return;
-                }
-                if (!gameBoard.includes(null)) {
-                    message.textContent = "It's a draw!";
-                    return;
-                }
-                currentPlayer = currentPlayer === "X" ? "O" : "X";
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            ctx.fillStyle = "red";
+            ctx.fillRect(food.x, food.y, box, box);
+
+            ctx.fillStyle = "green";
+            snake.forEach((segment, index) => {
+                ctx.fillRect(segment.x, segment.y, box, box);
+            });
+
+            let headX = snake[0].x;
+            let headY = snake[0].y;
+
+            if (direction === "LEFT") headX -= box;
+            if (direction === "UP") headY -= box;
+            if (direction === "RIGHT") headX += box;
+            if (direction === "DOWN") headY += box;
+
+            if (headX === food.x && headY === food.y) {
+                food = {
+                    x: Math.floor(Math.random() * 20) * box,
+                    y: Math.floor(Math.random() * 20) * box,
+                };
+            } else {
+                snake.pop();
             }
+
+            const newHead = { x: headX, y: headY };
+
+            if (
+                headX < 0 || headX >= canvas.width ||
+                headY < 0 || headY >= canvas.height ||
+                snake.some(segment => segment.x === headX && segment.y === headY)
+            ) {
+                alert("Game Over!");
+                clearInterval(game);
+                return;
+            }
+
+            snake.unshift(newHead);
         }
 
-        function checkWinner() {
-            const winningCombos = [
-                [0, 1, 2], [3, 4, 5], [6, 7, 8],
-                [0, 3, 6], [1, 4, 7], [2, 5, 8],
-                [0, 4, 8], [2, 4, 6]
-            ];
-            return winningCombos.some(combo => {
-                const [a, b, c] = combo;
-                return gameBoard[a] && gameBoard[a] === gameBoard[b] && gameBoard[a] === gameBoard[c];
-            });
-        }
-
-        function endGame() {
-            document.querySelectorAll(".cell").forEach(cell => cell.removeEventListener("click", makeMove));
-        }
-
-        function resetGame() {
-            gameBoard = Array(9).fill(null);
-            currentPlayer = "X";
-            message.textContent = "";
-            createBoard();
-        }
-
-        createBoard();
+        const game = setInterval(draw, 100);
     </script>
 </body>
 </html>
